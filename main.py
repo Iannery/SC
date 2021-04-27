@@ -1,6 +1,7 @@
 
 import json
 import random
+import time
 
 data = {}
 data['debug']   = []
@@ -62,14 +63,16 @@ def genKey():
     print("Generating Random Prime Numbers \"P\" and \"Q\"")
     p = random.randrange(2**511, 2**512)
     q = random.randrange(2**511, 2**512)
-    print("Calculating valid \"P\" value...", end="")
+    print("Calculating valid \"P\" value...", end="", flush=True)
     while not millerRabin(p, 40):
-        print(".", end="")
+        print(".", end="", flush=True)
+        time.sleep(0.01)
         p = random.randrange(2**511, 2**512)
     print("\nDone")
-    print("Calculating valid \"Q\" value...", end="")
+    print("Calculating valid \"Q\" value...", end="", flush=True)
     while not millerRabin(q, 40):
-        print(".", end="")
+        print(".", end="", flush=True)
+        time.sleep(0.01)
         q = random.randrange(2**511, 2**512)
     print("\nDone")
     if millerRabin(p, 40) and millerRabin(q, 40):
@@ -78,11 +81,12 @@ def genKey():
     phi = (p-1)*(q-1)
     
     
-    print("Calculating valid \"e\" value...", end="")
+    print("Calculating valid \"e\" value...", end="", flush=True)
     e = random.randrange(1, phi)
     gcd, _, _ = euclideanExtendedGCD(e, phi)
     while gcd != 1:
-        print(".", end="")
+        print(".", end="",flush=True)
+        time.sleep(0.01)
         e = random.randrange(1, phi)
         gcd, _, _ = euclideanExtendedGCD(e, phi)
     print("\nDone")
@@ -90,7 +94,7 @@ def genKey():
     _, d, _ = euclideanExtendedGCD(e, phi)
     if d < 0:
         d = d + phi
-    print("\nDone")
+    print("Done")
     data['debug'].append({
         'p' : {
             'value' : p,
