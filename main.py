@@ -1,7 +1,9 @@
-
+import math
 import json
 import random
 import time
+import hashlib
+import sha3
 
 data = {}
 data['debug']   = []
@@ -41,9 +43,9 @@ def countTotalBits(n):
 def euclideanExtendedGCD(a, b):
     if a == 0:
         return b, 0, 1
-    
+
     gcd, x1, y1 = euclideanExtendedGCD(b%a, a)
-    
+
     x = y1 - (b//a) * x1
     y = x1
     if (x < 0):
@@ -79,22 +81,28 @@ def genKey():
         print("Random P and Q generated.")
     n = p * q
     phi = (p-1)*(q-1)
-    
-    
+
+
+
     print("Calculating valid \"e\" value...", end="", flush=True)
-    e = random.randrange(1, phi)
-    gcd, _, _ = euclideanExtendedGCD(e, phi)
-    while gcd != 1:
-        print(".", end="",flush=True)
-        time.sleep(0.01)
-        e = random.randrange(1, phi)
-        gcd, _, _ = euclideanExtendedGCD(e, phi)
+    # e = random.randrange(1, phi)
+    # gcd, _, _ = euclideanExtendedGCD(e, phi)
+    # while gcd != 1:
+    #     print(".", end="",flush=True)
+    #     time.sleep(0.01)
+    #     e = random.randrange(1, phi)
+    #     gcd, _, _ = euclideanExtendedGCD(e, phi)
+    e = 65537 #common value for e (https://www.johndcook.com/blog/2018/12/12/rsa-exponent/)
+
     print("\nDone")
     print("Calculating valid \"d\" value...")
     _, d, _ = euclideanExtendedGCD(e, phi)
     if d < 0:
         d = d + phi
     print("Done")
+    print("Here: ", (d*e) % phi)
+
+
     data['debug'].append({
         'p' : {
             'value' : p,
@@ -138,5 +146,28 @@ def genKey():
         },
     })
 
+def encrypt(m):
+    pblc_key = json.load(open('public.json', 'r'))
+    n = pblc_key['n']['value']
+    e = pblc_key['e']['value']
+
+    #m1 = hash m with sha3
+    #sig = m1 ** (d mod n)
+    #concat m||m1
+
+    c = m**e % n
+    print(c)
+
+def decrypt(c):
+    prvt_key = json.load(open('private.json', 'r'))
+    p = prvt_key['p']['value']
+    q = prvt_key['q']['value']
+    d = prvt_key['d']['value']
+
+    m = c**d % n
+    print(m)
+
 genKey()
 jsonDump()
+# encrypt(5)
+# decrypt(91434641490682327881454754527469281215398921078783787181249427330763686098565531126522100281854870609210132459648085010092444485467207371153024704651301529498694998301419351609800450697572437591421796856200840038098320598910944323436052176100438623046569761596383711049864425125598845887905799918767030495009)
