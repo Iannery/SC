@@ -151,9 +151,8 @@ def encrypt(m):
     n = pblc_key['n']['value']
     e = pblc_key['e']['value']
 
-    #m1 = hash m with sha3
-    #sig = m1 ** (d mod n)
-    #concat m||m1
+    #hash m with sha3
+    #sig = m ** (d mod n)
 
     c = m**e % n
     print(c)
