@@ -6,12 +6,15 @@ import hashlib
 import base64
 import sympy
 import sys
+import string
+
+# X, Y = "", ""
+
 sys.setrecursionlimit(1000000)
 data = {}
 data['debug']   = []
 data['public']  = []
 data['private'] = []
-rsakey = 'Mpk7gvtqIADk7O8a6eqS5Fk6ARPAqXEWyewFa+8qiUOUwIiFqfWbFRD7JjMqwtY0tO6Os7c7GjbpNJ9M5OEXZPVA+Qw/CqhD7GUzMC5s0YjN5aJ1GuTa2+373NpGJaHsq9OTKc/ILQ/U8ap8DaZ5NgueoWk5gTXKZbDOjxF0AHSfJQFwbv0XCFHCOe8Lmw8FkBzQQddIkVVANwPvakw6k/vul1fwQTNmACZ84ZAFq2M='
 
 
 def millerRabin(n, k):
@@ -64,7 +67,6 @@ def jsonDump():
         json.dump(data['private'][0], privateFile, indent=4)
 
 def genKey():
-
     print("Generating Random Prime Numbers \"P\" and \"Q\"")
     p = sympy.randprime(2**511, 2**512)
     q = sympy.randprime(2**511, 2**512)
@@ -92,19 +94,11 @@ def genKey():
 
 
     print("Calculating valid \"e\" value...", end="", flush=True)
-    # e = random.randrange(1, phi)
-    # gcd, _, _ = euclideanExtendedGCD(e, phi)
-    # while gcd != 1:
-    #     print(".", end="",flush=True)
-    #     time.sleep(0.01)
-    #     e = random.randrange(1, phi)
-    #     gcd, _, _ = euclideanExtendedGCD(e, phi)
-    e = 65537 #common value for e (https://www.johndcook.com/blog/2018/12/12/rsa-exponent/)
+    e = 65537
 
     print("\nDone")
     print("Calculating valid \"d\" value...")
     _, d, _ = euclideanExtendedGCD(e, phi)
-    # d = modInv(e, phi)
     if d < 0:
         d = (d + phi) % phi
     print("Done")
@@ -152,36 +146,82 @@ def genKey():
         },
     })
 
-def sign(message):
+def sign(msg):
     prvt_key = json.load(open('private.json', 'r'))
     p = prvt_key['p']['value']
     q = prvt_key['q']['value']
     d = prvt_key['d']['value']
     n = p * q
-    sha3 = hashlib.sha3_256()
-    message_bytes = message.encode('ascii')
-    sha3.update(message_bytes)
-    cypher = sha3.digest()
-    hexcypher = sha3.hexdigest()
-    deccypher = int(hexcypher, 16)
 
-    signature = pow(deccypher,d,n)
+    #pega a mensagem, transforma em bytes e faz o hash
+    msg_hash = hashlib.sha3_256(msg.encode('ascii')).hexdigest()
 
-    return signature
+    #pega o hash e faz o padding
+    t = '00000000'
+    r = gen_random_str()
+    msg_hash_padd = padded(msg_hash, r, t)
+
+    #pega o resultado do padding e transforma em inteiro
+    cypher = int(msg_hash_padd, 16)
+
+    signature = pow(cypher,d,n)
+
+    return signature, msg_hash_padd
+
+def xor(xs, ys):
+    return "".join(chr(ord(x)^ord(y)) for x, y in zip(xs, ys))
+
+def gen_random_str(length = 8): # k0
+    result = ''.join((random.choice(string.ascii_letters) for x in range(length)))
+    return result
+
+def padded(msg, r, t):
+    #expande msg com k1 zeros ( t = '00000' - k1 vezes)
+    msg = msg + t
+
+    #pega a string aleatoria r, transforma em bytes e faz o hash
+    h = hashlib.sha3_256(r.encode('ascii')).hexdigest()
+
+    X = xor(msg, h)
+
+    #pega a string X, transforma em bytes e faz o hash
+    g = hashlib.sha3_256(X.encode('ascii')).hexdigest()
+
+    Y = xor(r, g)
+
+    msg_padded =  (X + Y).encode('ascii')
+    return msg_padded
+
+def unpadded(msg_padded):
+    Y = msg_padded[-8:]
+    X = msg_padded[:-8]
+
+    g = hashlib.sha3_256(X.encode('ascii')).hexdigest()
+    r = xor(Y, g)
+    h = hashlib.sha3_256(r.encode('ascii')).hexdigest()
+
+    msg_unpadded = xor(X, h)
+    return msg_unpadded
 
 
-def verify(message, signature):
+
+def verify(msg, signature):
     pblc_key = json.load(open('public.json', 'r'))
     n = pblc_key['n']['value']
     e = pblc_key['e']['value']
 
-    sha3 = hashlib.sha3_256()
-    message_bytes = message.encode('ascii')
-    sha3.update(message_bytes)
-    hexcypher = sha3.hexdigest()
-    deccypher = int(hexcypher, 16)
+    #para comparar ao final
+    correct_hash = hashlib.sha3_256(msg.encode("ascii")).hexdigest()
 
-    if (deccypher == pow(signature, e, n)):
+    #desfaz o rsa
+    decrpt_int = pow(signature, e, n)
+    #transforma de numero de volta para bytes
+    msg_padded = int(decrpt_int, 16)
+
+    #desfaz o padding
+    msg_hash = unpadded(msg_padded)
+
+    if (correct_hash == msg_hash):
         print("Valid signature!")
     else:
         print("Invalid signature!")
@@ -189,5 +229,5 @@ def verify(message, signature):
 # genKey()
 # jsonDump()
 msg = "attack now"
-sigature = sign(msg)
+sigature, msg = sign(msg)
 verify(msg, sigature)
