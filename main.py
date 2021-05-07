@@ -147,6 +147,7 @@ def genKey():
     })
 
 def sign(msg):
+    print("SIGN")
     prvt_key = json.load(open('private.json', 'r'))
     p = prvt_key['p']['value']
     q = prvt_key['q']['value']
@@ -164,10 +165,10 @@ def sign(msg):
     print("MSG_HASH_PADDED = ", msg_hash_padd)
     #pega o resultado do padding e transforma em inteiro
     cypher = int.from_bytes(msg_hash_padd, "big")
-    print(cypher)
+    print("MSG HASH PADDED INT = ", cypher)
     signature = pow(cypher,d,n)
 
-    return signature, msg_hash_padd
+    return signature
 
 def xor(xs, ys):
     return "".join(chr(ord(x)^ord(y)) for x, y in zip(xs, ys))
@@ -177,6 +178,7 @@ def gen_random_str(length = 8): # k0
     return result
 
 def padded(msg, r, t):
+    global X, Y
     #expande msg com k1 zeros ( t = '00000' - k1 vezes)
     msg = msg + t
 
@@ -190,7 +192,7 @@ def padded(msg, r, t):
 
     Y = xor(r, g)
 
-    msg_padded =  (X + Y).encode("ascii")
+    msg_padded =  (X + Y).encode('ascii')
     return msg_padded
 
 def unpadded():
@@ -198,13 +200,13 @@ def unpadded():
     # g = hashlib.sha3_256(X.encode('ascii')).hexdigest()
     # r = xor(Y, g)
     # h = hashlib.sha3_256(r.encode('ascii')).hexdigest()
-    
+
     # msg_unpadded = xor(X, h)
-    
-    r1=xor(Y,hashlib.sha3_256(X.encode('ascii')).hexdigest())
-    
-    msg_unpadded=xor(X,hashlib.sha3_256(r1.encode('ascii')).hexdigest())
-    print("MSG UNPADDED: ", msg_unpadded)
+
+    r1 = xor(Y,hashlib.sha3_256(X.encode('ascii')).hexdigest())
+
+    msg_unpadded = xor(X,hashlib.sha3_256(r1.encode('ascii')).hexdigest())
+
     return msg_unpadded
 
 
@@ -215,20 +217,25 @@ def verify(msg, signature):
     e = pblc_key['e']['value']
 
     #para comparar ao final
-    correct_hash = hashlib.sha3_256(msg).hexdigest()
 
+    correct_hash = hashlib.sha3_256(msg.encode('ascii')).hexdigest()
+    print(" ")
+    print("VERIFY")
     #desfaz o rsa
     decrpt_int = pow(signature, e, n)
-    print(type(decrpt_int))
+    print("MSG_HASH_PADDED_INT = ", decrpt_int)
     #transforma de numero de volta para bytes
-    msg_padded = decrpt_int.to_bytes(decrpt_int.bit_length(), byteorder='big')
-    msg_padded = msg_padded.decode('ascii')
+    number_of_bytes = int(math.ceil(decrpt_int.bit_length() / 8))
+
+    msg_padded = decrpt_int.to_bytes(number_of_bytes, byteorder='big')
+    # msg_padded = msg_padded.decode('ascii')
+    print("MSG_HASH_PADDED = ", msg_padded)
+
     #desfaz o padding
     msg_hash = unpadded()
+    print("MSG_HASH = ", msg_hash)
+    print("MSG_HASH2 = ", correct_hash)
 
-    print(correct_hash)
-    print(msg_hash)
-    
     if (correct_hash == msg_hash):
         print("Valid signature!")
     else:
@@ -237,5 +244,5 @@ def verify(msg, signature):
 # genKey()
 # jsonDump()
 msg = "attack now"
-sigature, msg = sign(msg)
+sigature = sign(msg)
 verify(msg, sigature)
