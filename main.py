@@ -8,7 +8,7 @@ import sympy
 import sys
 import string
 
-# X, Y = "", ""
+X, Y = "", ""
 
 sys.setrecursionlimit(1000000)
 data = {}
@@ -159,11 +159,12 @@ def sign(msg):
     #pega o hash e faz o padding
     t = '00000000'
     r = gen_random_str()
+    print("MSG_HASH = ", msg_hash)
     msg_hash_padd = padded(msg_hash, r, t)
-
+    print("MSG_HASH_PADDED = ", msg_hash_padd)
     #pega o resultado do padding e transforma em inteiro
-    cypher = int(msg_hash_padd, 16)
-
+    cypher = int.from_bytes(msg_hash_padd, "big")
+    print(cypher)
     signature = pow(cypher,d,n)
 
     return signature, msg_hash_padd
@@ -189,18 +190,21 @@ def padded(msg, r, t):
 
     Y = xor(r, g)
 
-    msg_padded =  (X + Y).encode('ascii')
+    msg_padded =  (X + Y).encode("ascii")
     return msg_padded
 
-def unpadded(msg_padded):
-    Y = msg_padded[-8:]
-    X = msg_padded[:-8]
+def unpadded():
 
-    g = hashlib.sha3_256(X.encode('ascii')).hexdigest()
-    r = xor(Y, g)
-    h = hashlib.sha3_256(r.encode('ascii')).hexdigest()
-
-    msg_unpadded = xor(X, h)
+    # g = hashlib.sha3_256(X.encode('ascii')).hexdigest()
+    # r = xor(Y, g)
+    # h = hashlib.sha3_256(r.encode('ascii')).hexdigest()
+    
+    # msg_unpadded = xor(X, h)
+    
+    r1=xor(Y,hashlib.sha3_256(X.encode('ascii')).hexdigest())
+    
+    msg_unpadded=xor(X,hashlib.sha3_256(r1.encode('ascii')).hexdigest())
+    print("MSG UNPADDED: ", msg_unpadded)
     return msg_unpadded
 
 
@@ -211,16 +215,20 @@ def verify(msg, signature):
     e = pblc_key['e']['value']
 
     #para comparar ao final
-    correct_hash = hashlib.sha3_256(msg.encode("ascii")).hexdigest()
+    correct_hash = hashlib.sha3_256(msg).hexdigest()
 
     #desfaz o rsa
     decrpt_int = pow(signature, e, n)
+    print(type(decrpt_int))
     #transforma de numero de volta para bytes
-    msg_padded = int(decrpt_int, 16)
-
+    msg_padded = decrpt_int.to_bytes(decrpt_int.bit_length(), byteorder='big')
+    msg_padded = msg_padded.decode('ascii')
     #desfaz o padding
-    msg_hash = unpadded(msg_padded)
+    msg_hash = unpadded()
 
+    print(correct_hash)
+    print(msg_hash)
+    
     if (correct_hash == msg_hash):
         print("Valid signature!")
     else:
