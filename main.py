@@ -6,6 +6,10 @@ import hashlib
 import base64
 import sympy
 import sys
+import string
+
+X, Y = "", ""
+
 sys.setrecursionlimit(1000000)
 data = {}
 data['debug']   = []
@@ -158,17 +162,52 @@ def sign(message):
     q = prvt_key['q']['value']
     d = prvt_key['d']['value']
     n = p * q
-    sha3 = hashlib.sha3_256()
-    message_bytes = message.encode('ascii')
+    
+    # message_bytes = message.encode('ascii')
 
-    sha3.update(message_bytes)
+    t = '00000000'
+    r = gen_random_str()
+    message_padded = padded(message,r,t).encode('ascii')
+    sha3 = hashlib.sha3_256()
+    sha3.update(message_padded)
     cypher = sha3.digest()
     hexcypher = sha3.hexdigest()
     deccypher = int(hexcypher, 16)
 
     signature = pow(deccypher,d,n)
 
-    return signature
+    return signature, message_padded
+
+def xor(xs,ys):
+    return "".join(chr(ord(x)^ord(y)) for x,y in zip(xs,ys))
+
+def gen_random_str(length = 8): # k0
+    result = ''.join((random.choice(string.ascii_letters) for x in range(length)))
+    return result
+
+def padded(msg,r,t):
+    
+    msg=msg+t # t = k1
+    
+    h=hashlib.sha3_256(r.encode('ascii')).hexdigest()
+    
+    X=xor(msg,h)
+    
+    g=hashlib.sha3_256(X.encode('ascii')).hexdigest()
+    
+    Y=xor(r,g)
+    
+    mn= X + Y
+    
+    return mn
+
+def unpadded():   
+    r1=xor(Y,hashlib.sha3_256(X.encode('ascii')).hexdigest())
+    
+    mn=xor(X,hashlib.sha3_256(r1.encode('ascii')).hexdigest())
+    
+    return mn
+
 
 
 def verify(message, signature):
@@ -177,11 +216,10 @@ def verify(message, signature):
     e = pblc_key['e']['value']
 
     sha3 = hashlib.sha3_256()
-    message_bytes = message.encode('ascii')
-    sha3.update(message_bytes)
+    sha3.update(message)
     hexcypher = sha3.hexdigest()
     deccypher = int(hexcypher, 16)
-
+    
     if (deccypher == pow(signature, e, n)):
         print("Valid signature!")
     else:
@@ -190,5 +228,5 @@ def verify(message, signature):
 # genKey()
 # jsonDump()
 msg = "attack now"
-sigature = sign(msg)
-verify(msg, sigature)
+sigature, msg_padded = sign(msg)
+verify(msg_padded, sigature)
