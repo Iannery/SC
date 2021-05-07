@@ -136,7 +136,7 @@ def genKey():
             'value' : d,
         },
     })
-def jsonDump(self):
+def jsonDump():
     with open('debug.json', 'w+') as debugFile:
         json.dump(data['debug'][0], debugFile, indent=4)
     with open('public.json', 'w+') as publicFile:
