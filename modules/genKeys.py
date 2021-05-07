@@ -1,21 +1,12 @@
-import math
-import json
+
 import random
+import json
 import time
-import hashlib
-import base64
-import sympy
-import sys
-import string
-
-X, Y = "", ""
-
-sys.setrecursionlimit(1000000)
 data = {}
 data['debug']   = []
 data['public']  = []
 data['private'] = []
-rsakey = 'Mpk7gvtqIADk7O8a6eqS5Fk6ARPAqXEWyewFa+8qiUOUwIiFqfWbFRD7JjMqwtY0tO6Os7c7GjbpNJ9M5OEXZPVA+Qw/CqhD7GUzMC5s0YjN5aJ1GuTa2+373NpGJaHsq9OTKc/ILQ/U8ap8DaZ5NgueoWk5gTXKZbDOjxF0AHSfJQFwbv0XCFHCOe8Lmw8FkBzQQddIkVVANwPvakw6k/vul1fwQTNmACZ84ZAFq2M='
+
 
 
 def millerRabin(n, k):
@@ -68,13 +59,11 @@ def jsonDump():
         json.dump(data['private'][0], privateFile, indent=4)
 
 def genKey():
-
     print("Generating Random Prime Numbers \"P\" and \"Q\"")
-    p = sympy.randprime(2**511, 2**512)
-    q = sympy.randprime(2**511, 2**512)
-    # q = random.randrange(2**511, 2**512)
-    # p = random.randrange(2**511, 2**512)
-    print(p)
+    # p = sympy.randprime(2**511, 2**512)
+    # q = sympy.randprime(2**511, 2**512)
+    q = random.randrange(2**511, 2**512)
+    p = random.randrange(2**511, 2**512)
     print("Calculating valid \"P\" value...", end="", flush=True)
     while not millerRabin(p, 40):
         print(".", end="", flush=True)
@@ -96,19 +85,11 @@ def genKey():
 
 
     print("Calculating valid \"e\" value...", end="", flush=True)
-    # e = random.randrange(1, phi)
-    # gcd, _, _ = euclideanExtendedGCD(e, phi)
-    # while gcd != 1:
-    #     print(".", end="",flush=True)
-    #     time.sleep(0.01)
-    #     e = random.randrange(1, phi)
-    #     gcd, _, _ = euclideanExtendedGCD(e, phi)
-    e = 65537 #common value for e (https://www.johndcook.com/blog/2018/12/12/rsa-exponent/)
+    e = 65537
 
     print("\nDone")
     print("Calculating valid \"d\" value...")
     _, d, _ = euclideanExtendedGCD(e, phi)
-    # d = modInv(e, phi)
     if d < 0:
         d = (d + phi) % phi
     print("Done")
@@ -155,78 +136,19 @@ def genKey():
             'value' : d,
         },
     })
+def jsonDump(self):
+    with open('debug.json', 'w+') as debugFile:
+        json.dump(data['debug'][0], debugFile, indent=4)
+    with open('public.json', 'w+') as publicFile:
+        json.dump(data['public'][0], publicFile, indent=4)
+    with open('private.json', 'w+') as privateFile:
+        json.dump(data['private'][0], privateFile, indent=4)
 
-def sign(message):
-    prvt_key = json.load(open('private.json', 'r'))
-    p = prvt_key['p']['value']
-    q = prvt_key['q']['value']
-    d = prvt_key['d']['value']
-    n = p * q
+class KeyGenerator:
     
-    # message_bytes = message.encode('ascii')
-
-    t = '00000000'
-    r = gen_random_str()
-    message_padded = padded(message,r,t).encode('ascii')
-    sha3 = hashlib.sha3_256()
-    sha3.update(message_padded)
-    cypher = sha3.digest()
-    hexcypher = sha3.hexdigest()
-    deccypher = int(hexcypher, 16)
-
-    signature = pow(deccypher,d,n)
-
-    return signature, message_padded
-
-def xor(xs,ys):
-    return "".join(chr(ord(x)^ord(y)) for x,y in zip(xs,ys))
-
-def gen_random_str(length = 8): # k0
-    result = ''.join((random.choice(string.ascii_letters) for x in range(length)))
-    return result
-
-def padded(msg,r,t):
     
-    msg=msg+t # t = k1
-    
-    h=hashlib.sha3_256(r.encode('ascii')).hexdigest()
-    
-    X=xor(msg,h)
-    
-    g=hashlib.sha3_256(X.encode('ascii')).hexdigest()
-    
-    Y=xor(r,g)
-    
-    mn= X + Y
-    
-    return mn
-
-def unpadded():   
-    r1=xor(Y,hashlib.sha3_256(X.encode('ascii')).hexdigest())
-    
-    mn=xor(X,hashlib.sha3_256(r1.encode('ascii')).hexdigest())
-    
-    return mn
-
-
-
-def verify(message, signature):
-    pblc_key = json.load(open('public.json', 'r'))
-    n = pblc_key['n']['value']
-    e = pblc_key['e']['value']
-
-    sha3 = hashlib.sha3_256()
-    sha3.update(message)
-    hexcypher = sha3.hexdigest()
-    deccypher = int(hexcypher, 16)
-    
-    if (deccypher == pow(signature, e, n)):
-        print("Valid signature!")
-    else:
-        print("Invalid signature!")
-
-# genKey()
-# jsonDump()
-msg = "attack now"
-sigature, msg_padded = sign(msg)
-verify(msg_padded, sigature)
+    def __init__(self):
+        pass
+    def run(self):
+        genKey()
+        jsonDump()
