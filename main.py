@@ -160,7 +160,6 @@ def sign(message):
     n = p * q
     sha3 = hashlib.sha3_256()
     message_bytes = message.encode('ascii')
-
     sha3.update(message_bytes)
     cypher = sha3.digest()
     hexcypher = sha3.hexdigest()
