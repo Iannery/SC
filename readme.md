@@ -1,15 +1,15 @@
-TRABALHO DE SEGURANÇA COMPUTACIONAL 2/2020
+**TRABALHO DE SEGURANÇA COMPUTACIONAL 2/2020**
 
-Universidade de Brasília
+    Universidade de Brasília
 
-Instituto de Exatas
+    Instituto de Exatas
 
-Departamento de Ciência da Computação
+    Departamento de Ciência da Computação
 
 
 Professor: José Gondim
 
-Alunos:
+Integrantes:
 
     - Ian Nery Bandeira - 170144739
 
